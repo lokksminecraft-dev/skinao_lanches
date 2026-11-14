@@ -34,12 +34,12 @@ jobs:
           # ===== COLE AQUI OS DADOS DO SEU FIREBASE =====
           cat > www/firebase-config.js <<'EOF'
           const FIREBASE_CONFIG = {
-            apiKey: "COLE_AQUI",
-            authDomain: "COLE_AQUI",
-            projectId: "COLE_AQUI",
-            storageBucket: "COLE_AQUI",
-            messagingenderId: "COLE_AQUI",
-            appId: "COLE_AQUI"
+            apiKey: "AIzaSyCuZqfc6_-LRbOp8C6TIkcOAa1QB7Ns1i8",
+            authDomain: "skinao-lanches-c4299.firebaseapp.com",
+            projectId: "skinao-lanches-c4299",
+            storageBucket: "skinao-lanches-c4299.firebasestorage.app",
+            messagingenderId: "475001856482",
+            appId: "1:475001856482:web:c37fc7dde385de728459bb"
           };
           EOF
 
