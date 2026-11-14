@@ -1151,7 +1151,7 @@ jobs:
           nav button{flex:1;border:0;background:none;color:var(--mu);padding:8px 0;border-radius:20px;display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .3s}
           nav button span{font-size:22px;transition:transform .3s}nav small{font-size:11px;font-weight:600}
           nav button.on{color:#fff;background:var(--btn);box-shadow:var(--sh)}nav button.on span{transform:translateY(-2px) scale(1.15)}
-          .bar{position:fixed;z-index:6;left:16px;right:16px;max-width:608px;margin:0 auto;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateY(160%);transition:transform .45s cubic-bezier(.2,.9,.3,1.2)}.bar.show{transform:none}
+          .bar{position:fixed;z-index:6;left:16px;right:16px;max-width:608px;margin:0 auto;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateY(calc(100% + 160px));opacity:0;pointer-events:none;transition:transform .45s cubic-bezier(.2,.9,.3,1.2),opacity .3s}.bar.show{transform:none;opacity:1;pointer-events:auto}
           .bar button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;color:#fff;font-size:16px;padding:14px 18px;border-radius:22px;background:var(--btn);box-shadow:0 12px 30px #f26a0f66}
           .cnt{background:#fff;color:var(--ac);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800}
           #sheet{position:fixed;inset:0;z-index:10;display:none;align-items:flex-end;background:#0007;backdrop-filter:blur(4px)}
@@ -1162,7 +1162,7 @@ jobs:
           .tot{display:flex;justify-content:space-between;font-size:20px;font-weight:800;margin:14px 0}
           .pane input,.pane textarea{width:100%;font:inherit;color:var(--fg);background:var(--card);border:1.5px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px;outline:0;transition:border-color .2s}
           .pane input:focus,.pane textarea:focus{border-color:var(--ac)}
-          .send{width:100%;border:0;color:#fff;font:700 17px inherit;padding:15px;border-radius:18px;background:var(--btn);box-shadow:0 10px 26px #f26a0f66}.send:active{transform:scale(.97)}
+          .send{width:100%;border:0;color:#fff;font-weight:700;font-size:17px;font-family:inherit;padding:15px;border-radius:18px;background:var(--btn);box-shadow:0 10px 26px #f26a0f66}.send:active{transform:scale(.97)}
           .ok{text-align:center;padding:20px 0}.ok .big{font-size:76px;animation:pop .6s}.ok h2{margin:8px 0}
           .cf{position:fixed;top:40%;left:50%;width:10px;height:14px;z-index:20;border-radius:3px;pointer-events:none;animation:cf 1.3s ease-out forwards}
           @keyframes cf{to{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
