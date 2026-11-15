@@ -2025,10 +2025,10 @@ jobs:
           const when=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
           const isNative=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
           let LN=null,perm='unknown';
-          if(isNative){try{LN=Capacitor.registerPlugin('LocalNotifications');LN.addListener('localNotificationActionPerformed',()=>go('ord'))}catch(e){}}
+          if(isNative){try{LN=(Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications)||Capacitor.registerPlugin('LocalNotifications');LN.addListener('localNotificationActionPerformed',()=>go('ord'))}catch(e){}}
           const ld=(k,dv)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?dv:v}catch(e){return dv}},sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-          async function initNotif(ask){
-           if(!LN)return;
+          async function initNotif(ask,u){
+           if(!LN){if(u)toast('Notificações indisponíveis neste aparelho.');return}
            try{
             let p=await LN.checkPermissions();
             if(p.display!=='granted'&&ask)p=await LN.requestPermissions();
@@ -2037,24 +2037,25 @@ jobs:
              await LN.createChannel({id:'buzina',name:'Avisos com buzina',description:'Avisos com som de buzina',importance:5,visibility:1,vibration:true,sound:'buzina.wav'});
              await LN.createChannel({id:'mudo',name:'Avisos sem som',description:'Avisos silenciosos',importance:3,visibility:1,vibration:false});
             }
-           }catch(e){}
+            if(u)toast(perm==='granted'?'Notificações ativadas ✓':'O Android bloqueou. Abra Configurações > Apps > '+document.title+' > Notificações e permita.');
+           }catch(e){if(u)toast('Erro: '+(e&&e.message?e.message:e))}
            if(tab==='cfg')view();
           }
           async function notify(title,body,tabk,kind,loud){
            if(kind&&!prefs[kind])return;
            if(!LN||perm!=='granted')return;
            const on=prefs.som||loud;
-           try{await LN.schedule({notifications:[{id:Math.floor(Math.random()*2000000000),title,body,channelId:on?'buzina':'mudo',sound:on?'buzina.wav':undefined,extra:{tab:tabk||''}}]})}catch(e){}
+           try{await LN.schedule({notifications:[{id:Math.floor(Math.random()*2000000000),title,body,channelId:on?'buzina':'mudo',sound:on?'buzina.wav':undefined,extra:{tab:tabk||''}}]})}catch(e){toast('Erro ao avisar: '+(e&&e.message?e.message:e))}
           }
           function pref(k,v){prefs[k]=v;sv('skinao_prefs',prefs)}
-          function testHorn(){if(LN&&perm==='granted')notify('📯 Beep beep!','Assim você será avisado.','',null,true);else{try{new Audio('buzina.wav').play()}catch(e){}}}
+          function testHorn(){if(LN&&perm==='granted'){notify('📯 Beep beep!','Assim você será avisado.','',null,true);toast('Aviso enviado ✓')}else{toast('Ative as notificações para receber os avisos.');try{new Audio('buzina.wav').play()}catch(e){}}}
           const SWT=(k,l,dd)=>`<label class="sw"><span><b>${l}</b><div class="d">${dd}</div></span><input type="checkbox" ${prefs[k]?'checked':''} onchange="pref('${k}',this.checked)"><i></i></label>`;
           const permTxt=(app)=>isNative?(perm==='granted'?'Notificações ativadas':perm==='denied'?'Bloqueadas: ative em Configurações do celular > Apps > '+app+' > Notificações':'Notificações desativadas'):'Disponível só no aplicativo instalado';
           prefs=Object.assign(prefs,ld('skinao_prefs',{}));
           function resetDay(){if(!confirm('Reiniciar o faturamento e a contagem de pedidos de hoje? Os pedidos continuam salvos.'))return;resetAt=Date.now();if(d)d.resetAt=resetAt;db.doc('config/main').set({resetAt},{merge:true}).then(()=>toast('Faturamento do dia reiniciado ✓')).catch(()=>toast('Não foi possível reiniciar.'));anim=true;view()}
           function delOrder(id){if(!confirm('Excluir este pedido? Isso não pode ser desfeito.'))return;db.doc('orders/'+id).delete().then(()=>toast('Pedido excluído')).catch(()=>toast('Não foi possível excluir.'))}
           function cfgView(c){
-           return `<div class="sec">Notificações</div><div class="card ed ${c}"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Painel Skinão'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true)">Ativar</button>':''}</div>
+           return `<div class="sec">Notificações</div><div class="card ed ${c}"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Painel Skinão'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true,true)">Ativar</button>':''}</div>
            ${SWT('ped','Novos pedidos','Aviso quando um cliente fizer um pedido')}${SWT('som','Som de buzina 📯','Toca a buzina ao avisar')}<button class="ghost wide" onclick="testHorn()">📯 Testar buzina</button></div>
            <div class="sec">Contato mostrado no app dos clientes</div><div class="card ed ${c}"><div class="rw">${E('cfg',0,'whats',d.whats||'','WhatsApp com DDD (ex.: 33998129226)','inputmode="numeric"')}</div><div class="rw">${E('cfg',0,'insta',d.insta||'','Instagram (ex.: skinao_lanches79)')}</div><div class="d">Salve em "Salvar alterações" para atualizar o app dos clientes.</div></div>
            <div class="sec">Faturamento</div><div class="card ed ${c}"><div class="d">Zera o faturamento e a contagem de pedidos de hoje. Os pedidos continuam salvos.</div><button class="ghost wide" onclick="resetDay()">↺ Reiniciar faturamento do dia</button></div>
@@ -2065,7 +2066,7 @@ jobs:
            if(!isNative)return '';
            const on=perm==='granted';
            const t=on?'Avisos de novos pedidos ativados':perm==='denied'?'Avisos bloqueados: ative em Configurações do celular > Apps > Painel Skinão > Notificações':'Avisos de novos pedidos desativados';
-           return `<div class="card ed ${c}"><div class="rw" style="align-items:center;justify-content:space-between"><span class="d">🔔 ${t}</span>${on?'<button class="ghost" onclick="testNotif()">Testar</button>':'<button class="btn" onclick="initNotif(true)">Ativar</button>'}</div></div>`}
+           return `<div class="card ed ${c}"><div class="rw" style="align-items:center;justify-content:space-between"><span class="d">🔔 ${t}</span>${on?'<button class="ghost" onclick="testNotif()">Testar</button>':'<button class="btn" onclick="initNotif(true,true)">Ativar</button>'}</div></div>`}
           function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200)}
           function nav(){const n=orders.filter(o=>o.status==='novo').length;$('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${tab===k?'on':''}" onclick="go('${k}')"><span class="ic">${i}${k==='ord'&&n?`<i class="bd">${n}</i>`:''}</span><small>${l}</small></button>`).join('')}
           function go(k){tab=k;anim=true;nav();view();bar()}
