@@ -1167,10 +1167,29 @@ jobs:
           .cf{position:fixed;top:40%;left:50%;width:10px;height:14px;z-index:20;border-radius:3px;pointer-events:none;animation:cf 1.3s ease-out forwards}
           @keyframes cf{to{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
           @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}}
+
+          .hero{overflow:hidden}.hero>*{position:relative;z-index:1}.hero>.fx{position:absolute;z-index:0}
+          .hero::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,#ffffff26,transparent);transform:skewX(-20deg);animation:shine 5s 1s infinite;z-index:0}@keyframes shine{to{left:140%}}
+          .fx{bottom:-40px;font-size:26px;opacity:.25;animation:fx 9s linear infinite}
+          .fx:nth-of-type(1){left:6%}.fx:nth-of-type(2){left:34%;animation-delay:-3s}.fx:nth-of-type(3){left:62%;animation-delay:-6s}.fx:nth-of-type(4){left:86%;animation-delay:-1.5s}
+          @keyframes fx{to{transform:translateY(-200px) rotate(360deg);opacity:0}}
+          .lw{position:relative;flex:none;width:94px;height:94px;display:grid;place-items:center}
+          .lw::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(#ffd166,#f26a0f,#c93f08,#ffd166);animation:spin 3.5s linear infinite}
+          .lw .logo{position:relative;border:3px solid #120807;box-shadow:0 0 26px #ffa726aa}@keyframes spin{to{transform:rotate(360deg)}}
+          .sec::before{content:"";display:inline-block;width:18px;height:3px;border-radius:3px;background:var(--btn);margin-right:8px;vertical-align:middle}
+          .card:active{transform:scale(.985)}button{transition:transform .15s}
+          .add{width:44px;height:44px;border-radius:50%;border:0;color:#fff;font-size:24px;font-weight:700;background:var(--btn);box-shadow:0 6px 16px #f26a0f66;animation:pop .35s}.qc{flex:none}
+          .plus{position:absolute;right:30px;top:8px;font-style:normal;font-weight:800;color:var(--ac2);animation:plus .7s forwards;pointer-events:none}@keyframes plus{to{transform:translateY(-34px);opacity:0}}
+          .bar button{animation:bumpb .4s,glow 2.2s .4s infinite}@keyframes bumpb{40%{transform:scale(1.06)}}@keyframes glow{50%{box-shadow:0 12px 42px #f26a0fbb}}
+          .seg{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:16px;margin-bottom:12px;border:1px solid var(--bd)}
+          .seg button{flex:1;border:0;background:none;color:var(--mu);font-weight:700;font-family:inherit;font-size:15px;padding:10px;border-radius:12px;transition:all .3s}.seg button.on{background:var(--btn);color:#fff;box-shadow:0 6px 16px #f26a0f55}
+          .shake{animation:shake .4s}@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+          .ck{width:92px;height:92px;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.ck circle{stroke:#22c55e;stroke-dasharray:151;stroke-dashoffset:151;animation:dash .6s forwards}.ck path{stroke:#22c55e;stroke-dasharray:40;stroke-dashoffset:40;animation:dash .4s .5s forwards}@keyframes dash{to{stroke-dashoffset:0}}
+          .ok .big{display:grid;place-items:center}
           </style></head>
           <body>
           <div class="blob b1"></div><div class="blob b2"></div>
-          <header class="hero"><img class="logo" src="logo.jpg" alt="Skinão Lanches"><div class="ht"><h1 id="nm"></h1><p>Sabor incrível 🔥</p><div class="chips"><a href="https://wa.me/5533998129226">💬 WhatsApp</a><a href="https://instagram.com/skinao_lanches93">📸 @skinao_lanches93</a></div></div></header>
+          <header class="hero"><span class="fx">🍔</span><span class="fx">🍟</span><span class="fx">🥤</span><span class="fx">🌭</span><div class="lw"><img class="logo" src="logo.jpg" alt="Skinão Lanches"></div><div class="ht"><h1 id="nm"></h1><p>Sabor incrível 🔥</p><div class="chips"><a href="https://wa.me/5533998129226">💬 WhatsApp</a><a href="https://instagram.com/skinao_lanches79">📸 @skinao_lanches79</a></div></div></header>
           <div id="nt"></div><div id="view"></div>
           <div id="bar" class="bar"></div><nav id="nav"></nav><div id="sheet" onclick="if(event.target===this)closeSheet()"></div>
           <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1194,6 +1213,12 @@ jobs:
            news:useFb?[]:[{title:'Novo: Milkshake artesanal',text:'Chegou o milkshake feito na hora, em 3 sabores!'}],
            promos:useFb?[]:[{title:'Combo X-Bacon + Batata',text:'Leve os dois por R$ 32 e economize.'}],dates:[]};
           let cart={},tab='menu';
+          let md='entrega',pf={name:'',phone:'',address:''};
+          try{pf=Object.assign(pf,JSON.parse(localStorage.getItem('skinao')||'{}'))}catch(e){}
+          const qc=i=>cart[i]?`<div class="qty"><button class="m" onclick="q(${i},-1)">−</button><b id="q${i}">${cart[i]}</b><button onclick="q(${i},1)">+</button></div>`:`<button class="add" onclick="q(${i},1)">+</button>`;
+          function mode(m){md=m;$('#m1').classList.toggle('on',m==='entrega');$('#m2').classList.toggle('on',m==='retirada');$('#ad').style.display=m==='entrega'?'':'none'}
+          function mask(e){const v=e.value.replace(/\D/g,'').slice(0,11);e.value=v.length>10?`(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`:v.length>6?`(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`:v.length>2?`(${v.slice(0,2)}) ${v.slice(2)}`:v}
+          function plus(el){const s=document.createElement('i');s.className='plus';s.textContent='+1';el.appendChild(s);setTimeout(()=>s.remove(),700)}
           const TABS=[['menu','🍔','Cardápio'],['news','✨','Novidades'],['promo','🏷️','Promoções'],['dates','🎉','Datas']];
           function em(it){if(it.emoji)return it.emoji;const n=it.name.toLowerCase(),M=[['burg|x-|lanche','🍔'],['batata|frita','🍟'],['milk|shake|sorvete|açaí|acai','🥤'],['refri|suco|coca|guaran|bebida|água|agua','🥤'],['pizza','🍕'],['hot|cachorro','🌭'],['pastel|salgad|coxinha','🥟'],['bolo|doce|torta','🍰'],['café|cafe','☕'],['cerveja','🍺'],['sanduíche|sanduiche|misto','🥪']];for(const[k,e]of M)if(new RegExp(k).test(n))return e;return '🍽️'}
           const empty=(e,t)=>`<div class="empty"><div>${e}</div><p>${t}</p></div>`;
@@ -1204,7 +1229,7 @@ jobs:
            let h='';const D=i=>`style="--d:${i*70}ms"`;
            if(tab==='menu'){
             if(!loaded)h='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
-            else h=cfg.items.length?'<div class="sec">Nosso cardápio</div>'+cfg.items.map((it,i)=>`<div class="card in ${cart[i]?'sel':''}" id="c${i}" ${D(i)}><div class="emo">${em(it)}</div><div class="inf"><b>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div><span class="price">${money(it.price)}</span></div><div class="qty"><button class="m" onclick="q(${i},-1)">−</button><b id="q${i}">${cart[i]||0}</b><button onclick="q(${i},1)">+</button></div></div>`).join(''):empty('🍽️','O cardápio será publicado em breve.');
+            else h=cfg.items.length?'<div class="sec">Nosso cardápio</div>'+cfg.items.map((it,i)=>`<div class="card in ${cart[i]?'sel':''}" id="c${i}" ${D(i)}><div class="emo">${em(it)}</div><div class="inf"><b>${esc(it.name)}</b><div class="d">${esc(it.desc)}</div><span class="price">${money(it.price)}</span></div><div class="qc" id="qc${i}">${qc(i)}</div></div>`).join(''):empty('🍽️','O cardápio será publicado em breve.');
            }
            if(tab==='news')h=(cfg.news||[]).length?'<div class="sec">Novidades</div>'+cfg.news.map((n,i)=>`<div class="card in" ${D(i)}><div class="emo">✨</div><div class="inf"><span class="tag">NOVO</span><br><b>${esc(n.title)}</b><div class="d">${esc(n.text)}</div></div></div>`).join(''):empty('✨','Nenhuma novidade por enquanto.');
            if(tab==='promo')h=(cfg.promos||[]).length?'<div class="sec">Promoções</div>'+cfg.promos.map((n,i)=>`<div class="card pcard in" ${D(i)}><div class="emo">🏷️</div><div class="inf"><span class="tag">PROMO</span><br><b>${esc(n.title)}</b><div class="d">${esc(n.text)}</div></div></div>`).join(''):empty('🏷️','Nenhuma promoção no momento.');
@@ -1216,20 +1241,23 @@ jobs:
           }
           const tot=()=>cfg.items.reduce((s,it,i)=>s+(cart[i]||0)*it.price,0),cnt=()=>Object.values(cart).reduce((a,b)=>a+b,0);
           function bar(){const b=$('#bar'),c=cnt();b.classList.toggle('show',c>0&&tab==='menu');if(c)b.innerHTML=`<button onclick="openSheet()"><span style="display:flex;gap:10px;align-items:center"><span class="cnt">${c}</span>Ver meu pedido</span><b>${money(tot())}</b></button>`}
-          function q(i,n){cart[i]=Math.max(0,(cart[i]||0)+n);const e=$('#q'+i);e.textContent=cart[i];e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');$('#c'+i).classList.toggle('sel',cart[i]>0);if(navigator.vibrate)navigator.vibrate(8);bar()}
-          function openSheet(){
+          function q(i,n){const was=cart[i]||0;cart[i]=Math.max(0,was+n);if(!cart[i])delete cart[i];$('#c'+i).classList.toggle('sel',!!cart[i]);if(!was||!cart[i])$('#qc'+i).innerHTML=qc(i);else{const e=$('#q'+i);e.textContent=cart[i];e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop')}if(n>0)plus($('#c'+i));if(navigator.vibrate)navigator.vibrate(8);bar()}
+          function openSheet(){md='entrega';
            const L=cfg.items.map((it,i)=>cart[i]?`<div class="ln"><span>${cart[i]}× ${esc(it.name)}</span><b>${money(cart[i]*it.price)}</b></div>`:'').join('');
-           $('#sheet').innerHTML=`<div class="pane"><div class="grip"></div><h2>Seu pedido 🧾</h2>${L}<div class="tot"><span>Total</span><span class="price">${money(tot())}</span></div><input id="cn" placeholder="Seu nome"><textarea id="co" rows="2" placeholder="Observações (ex.: sem cebola)"></textarea><button class="send" id="sb" onclick="send()">Confirmar pedido</button></div>`;
+           $('#sheet').innerHTML=`<div class="pane"><div class="grip"></div><h2>Seu pedido 🧾</h2>${L}<div class="tot"><span>Total</span><span class="price">${money(tot())}</span></div><div class="seg"><button id="m1" class="on" onclick="mode('entrega')">🛵 Entrega</button><button id="m2" onclick="mode('retirada')">🏪 Retirada</button></div><input id="cn" placeholder="Seu nome" autocomplete="name" value="${esc(pf.name)}"><input id="cp" type="tel" inputmode="numeric" placeholder="WhatsApp com DDD: (33) 99999-9999" oninput="mask(this)" value="${esc(pf.phone)}"><div id="ad"><textarea id="ca" rows="2" placeholder="Endereço: rua, número, bairro e ponto de referência">${esc(pf.address)}</textarea></div><textarea id="co" rows="2" placeholder="Observações (ex.: sem cebola)"></textarea><button class="send" id="sb" onclick="send()">Confirmar pedido</button></div>`;
            $('#sheet').classList.add('show')}
           function closeSheet(){$('#sheet').classList.remove('show')}
           function confetti(){const C=['#f26a0f','#ffa726','#ffd166','#fff4e8','#c93f08'];for(let i=0;i<46;i++){const s=document.createElement('i');s.className='cf';const a=Math.random()*6.28,r=120+Math.random()*180;s.style.cssText=`background:${C[i%5]};--x:${Math.cos(a)*r}px;--y:${Math.sin(a)*r+120}px;--r:${Math.random()*720}deg`;document.body.appendChild(s);setTimeout(()=>s.remove(),1400)}}
-          function done(t,m,e){$('#sheet').innerHTML=`<div class="pane"><div class="ok"><div class="big">${e}</div><h2>${t}</h2><p class="mu" style="color:var(--mu)">${m}</p></div><button class="send" onclick="closeSheet()">Fechar</button></div>`}
+          function done(t,m,e){$('#sheet').innerHTML=`<div class="pane"><div class="ok"><div class="big">${e==='🎉'?'<svg class="ck" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg>':e}</div><h2>${t}</h2><p class="mu" style="color:var(--mu)">${m}</p></div><button class="send" onclick="closeSheet()">Fechar</button></div>`}
           async function send(){
-           const name=$('#cn').value.trim();if(!name){$('#cn').style.borderColor='#e11d48';$('#cn').focus();return}
+           const name=$('#cn').value.trim(),phone=$('#cp').value.replace(/\D/g,''),address=md==='entrega'?$('#ca').value.trim():'';
+           const bad=id=>{const e=$(id);e.style.borderColor='#e11d48';e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');e.focus()};
+           if(!name){bad('#cn');return}if(phone.length<10){bad('#cp');return}if(md==='entrega'&&address.length<8){bad('#ca');return}
            const lines=cfg.items.map((it,i)=>({n:it.name,q:cart[i]||0,p:it.price})).filter(l=>l.q>0),total=tot(),obs=$('#co').value;
            $('#sb').textContent='Enviando…';
            try{
-            if(db)await db.collection('orders').add({name,obs,lines,total,at:Date.now(),status:'novo'});
+            pf={name,phone:$('#cp').value,address:$('#ca').value};try{localStorage.setItem('skinao',JSON.stringify(pf))}catch(e){}
+            if(db)await db.collection('orders').add({name,phone,address,mode:md,obs,lines,total,at:Date.now(),status:'novo'});
             cart={};done('Pedido enviado!',db?'Já estamos preparando com carinho. Obrigado, '+esc(name)+'!':'Modo demonstração: o pedido não foi enviado de verdade.','🎉');confetti();view();bar();
            }catch(e){done('Ops!','Não foi possível enviar. Tente de novo.','😕')}
           }
