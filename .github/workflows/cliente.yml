@@ -2004,8 +2004,8 @@ jobs:
           const isNative=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
           let LN=null,perm='unknown';
           const ld=(k,dv)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?dv:v}catch(e){return dv}},sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-          async function initNotif(ask){
-           if(!LN)return;
+          async function initNotif(ask,u){
+           if(!LN){if(u)toast('Notificações indisponíveis neste aparelho.');return}
            try{
             let p=await LN.checkPermissions();
             if(p.display!=='granted'&&ask)p=await LN.requestPermissions();
@@ -2014,21 +2014,22 @@ jobs:
              await LN.createChannel({id:'buzina',name:'Avisos com buzina',description:'Avisos com som de buzina',importance:5,visibility:1,vibration:true,sound:'buzina.wav'});
              await LN.createChannel({id:'mudo',name:'Avisos sem som',description:'Avisos silenciosos',importance:3,visibility:1,vibration:false});
             }
-           }catch(e){}
+            if(u)toast(perm==='granted'?'Notificações ativadas ✓':'O Android bloqueou. Abra Configurações > Apps > '+document.title+' > Notificações e permita.');
+           }catch(e){if(u)toast('Erro: '+(e&&e.message?e.message:e))}
            if(tab==='cfg')view();
           }
           async function notify(title,body,tabk,kind,loud){
            if(kind&&!prefs[kind])return;
            if(!LN||perm!=='granted')return;
            const on=prefs.som||loud;
-           try{await LN.schedule({notifications:[{id:Math.floor(Math.random()*2000000000),title,body,channelId:on?'buzina':'mudo',sound:on?'buzina.wav':undefined,extra:{tab:tabk||''}}]})}catch(e){}
+           try{await LN.schedule({notifications:[{id:Math.floor(Math.random()*2000000000),title,body,channelId:on?'buzina':'mudo',sound:on?'buzina.wav':undefined,extra:{tab:tabk||''}}]})}catch(e){toast('Erro ao avisar: '+(e&&e.message?e.message:e))}
           }
           function pref(k,v){prefs[k]=v;sv('skinao_prefs',prefs)}
-          function testHorn(){if(LN&&perm==='granted')notify('📯 Beep beep!','Assim você será avisado.','',null,true);else{try{new Audio('buzina.wav').play()}catch(e){}}}
+          function testHorn(){if(LN&&perm==='granted'){notify('📯 Beep beep!','Assim você será avisado.','',null,true);toast('Aviso enviado ✓')}else{toast('Ative as notificações para receber os avisos.');try{new Audio('buzina.wav').play()}catch(e){}}}
           const SWT=(k,l,dd)=>`<label class="sw"><span><b>${l}</b><div class="d">${dd}</div></span><input type="checkbox" ${prefs[k]?'checked':''} onchange="pref('${k}',this.checked)"><i></i></label>`;
           const permTxt=(app)=>isNative?(perm==='granted'?'Notificações ativadas':perm==='denied'?'Bloqueadas: ative em Configurações do celular > Apps > '+app+' > Notificações':'Notificações desativadas'):'Disponível só no aplicativo instalado';
           let prefs=Object.assign({ped:true,promo:true,som:true},ld('skinao_prefs',{}));
-          if(isNative){try{LN=Capacitor.registerPlugin('LocalNotifications');LN.addListener('localNotificationActionPerformed',e=>{const t=((e.notification||{}).extra||{}).tab;if(t){tab=t;nav();view();bar()}})}catch(e){}}
+          if(isNative){try{LN=(Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications)||Capacitor.registerPlugin('LocalNotifications');LN.addListener('localNotificationActionPerformed',e=>{const t=((e.notification||{}).extra||{}).tab;if(t){tab=t;nav();view();bar()}})}catch(e){}}
           const WA=()=>{const q=String(cfg.whats||'5533998129226').replace(/\D/g,'');return q.length<=11?'55'+q:q},IG=()=>String(cfg.insta||'skinao_lanches79').replace(/^@/,'').trim();
           const chips=()=>`<a href="https://wa.me/${WA()}">💬 WhatsApp</a><a href="https://instagram.com/${IG()}">📸 @${esc(IG())}</a>`;
           function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
@@ -2054,7 +2055,7 @@ jobs:
           function saveMe(){pf={name:$('#sn').value.trim(),phone:$('#sp').value,address:$('#sa').value.trim()};sv('skinao',pf);toast('Dados salvos ✓')}
           function clearMe(){pf={name:'',phone:'',address:''};sv('skinao',pf);view();toast('Dados apagados')}
           function cfgView(){
-           return `<div class="sec">Notificações</div><div class="card ed in"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Skinão Lanches'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true)">Ativar</button>':''}</div>
+           return `<div class="sec">Notificações</div><div class="card ed in"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Skinão Lanches'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true,true)">Ativar</button>':''}</div>
            ${SWT('ped','Status do meu pedido','Aviso quando sair para entrega')}${SWT('promo','Novidades e promoções','Aviso quando o cardápio tiver novidades')}${SWT('som','Som de buzina 📯','Toca a buzina ao avisar')}<button class="ghost wide" onclick="testHorn()">📯 Testar buzina</button></div>
            <div class="sec">Meus dados</div><div class="card ed in"><input id="sn" placeholder="Nome" value="${esc(pf.name)}"><div style="height:8px"></div><input id="sp" type="tel" inputmode="numeric" placeholder="WhatsApp com DDD" oninput="mask(this)" value="${esc(pf.phone)}"><div style="height:8px"></div><textarea id="sa" rows="2" placeholder="Endereço de entrega">${esc(pf.address)}</textarea><div class="acts"><button class="btn" onclick="saveMe()">Salvar</button><button class="ghost" onclick="clearMe()">Limpar dados</button></div></div>
            <div class="sec">Fale com a gente</div><div class="card ed in"><div class="acts" style="margin:0"><a class="wa" href="https://wa.me/${WA()}">💬 WhatsApp</a><a href="https://instagram.com/${IG()}">📸 Instagram</a></div></div>
