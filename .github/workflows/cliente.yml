@@ -1969,6 +1969,8 @@ jobs:
           .ghost{border:1.5px solid var(--bd);background:none;color:var(--fg);font-weight:700;font-size:14px;font-family:inherit;padding:9px 16px;border-radius:14px}.wide{width:100%;margin-top:6px;padding:13px}
           .acts{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}.acts a{color:var(--fg);text-decoration:none;font-weight:700;font-size:13px;padding:9px 14px;border-radius:14px;border:1.5px solid var(--bd);background:var(--bg)}.acts a.wa{background:linear-gradient(135deg,#15803d,#22c55e);border-color:transparent;color:#fff}
           #toast{position:fixed;z-index:40;left:16px;right:16px;max-width:560px;margin:0 auto;top:calc(14px + env(safe-area-inset-top));padding:14px 16px;border-radius:18px;background:#16a34a;color:#fff;font-weight:700;box-shadow:0 10px 30px #0006;transform:translateY(-200%);transition:transform .4s cubic-bezier(.2,.9,.3,1.2)}#toast.show{transform:none}
+          .chips .ob{font-size:12px;font-weight:800;padding:5px 11px;border-radius:20px;background:#00000050}.chips .ob.on{color:#86efac}.chips .ob.off{color:#fca5a5}
+          .st{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;color:#fff}.s-novo{background:var(--btn)}.s-pronto{background:#16a34a}.s-saiu{background:#2563eb}.s-entregue{background:#52525b}
           </style></head>
           <body>
           <div class="blob b1"></div><div class="blob b2"></div>
@@ -1976,6 +1978,7 @@ jobs:
           <div id="nt"></div><div id="view"></div>
           <div id="bar" class="bar"></div><nav id="nav"></nav><div id="toast"></div><div id="sheet" onclick="if(event.target===this)closeSheet()"></div>
           <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+          <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
           <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
           <script src="firebase-config.js"></script>
           <script>
@@ -1983,8 +1986,8 @@ jobs:
           const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
           const money=n=>'R$ '+Number(n||0).toFixed(2).replace('.',',');
           const useFb=typeof firebase!=='undefined'&&FIREBASE_CONFIG.apiKey!=='COLE_AQUI';
-          let db=null,loaded=!useFb;
-          if(useFb){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();}
+          let db=null,auth=null,loaded=!useFb;
+          if(useFb){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();auth=firebase.auth();}
           /* Cardápio de demonstração: aparece até você ligar o Firebase e o painel */
           let cfg={name:'Skinão Lanches',notice:useFb?'':'Sabor incrível! Peça já o seu 🔥',
            items:useFb?[]:[
@@ -2031,7 +2034,8 @@ jobs:
           let prefs=Object.assign({ped:true,promo:true,som:true},ld('skinao_prefs',{}));
           if(isNative){try{LN=(Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications)||Capacitor.registerPlugin('LocalNotifications');LN.addListener('localNotificationActionPerformed',e=>{const t=((e.notification||{}).extra||{}).tab;if(t){tab=t;nav();view();bar()}})}catch(e){}}
           const WA=()=>{const q=String(cfg.whats||'5533998129226').replace(/\D/g,'');return q.length<=11?'55'+q:q},IG=()=>String(cfg.insta||'skinao_lanches79').replace(/^@/,'').trim();
-          const chips=()=>`<a href="https://wa.me/${WA()}">💬 WhatsApp</a><a href="https://instagram.com/${IG()}">📸 @${esc(IG())}</a>`;
+          const isOpen=()=>cfg.open!==false;
+          const chips=()=>`<span class="ob ${isOpen()?'on':'off'}">${isOpen()?'🟢 Aberto agora':'🔴 Fechado'}</span><a href="https://wa.me/${WA()}">💬 WhatsApp</a><a href="https://instagram.com/${IG()}">📸 @${esc(IG())}</a>`;
           function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
           let tracked=ld('skinao_orders',[]),unsubs={};
           function watchOrders(){
@@ -2052,14 +2056,49 @@ jobs:
            nw.forEach(([s,x,t])=>notify(t==='news'?'✨ Novidade na Skinão!':'🏷️ Promoção na Skinão!',x.title+(x.text?' — '+x.text:''),t,'promo'));
            if(nw.length)sv('skinao_seen',all.map(a=>a[0]));
           }
-          function saveMe(){pf={name:$('#sn').value.trim(),phone:$('#sp').value,address:$('#sa').value.trim()};sv('skinao',pf);toast('Dados salvos ✓')}
+          function saveMe(){pf={name:$('#sn').value.trim(),phone:$('#sp').value,address:$('#sa').value.trim()};sv('skinao',pf);if(me&&db)db.doc('users/'+me.uid).set(pf,{merge:true}).catch(()=>{});toast('Dados salvos ✓')}
           function clearMe(){pf={name:'',phone:'',address:''};sv('skinao',pf);view();toast('Dados apagados')}
           function cfgView(){
-           return `<div class="sec">Notificações</div><div class="card ed in"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Skinão Lanches'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true,true)">Ativar</button>':''}</div>
+           return acct()+`<div class="sec">Notificações</div><div class="card ed in"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Skinão Lanches'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true,true)">Ativar</button>':''}</div>
            ${SWT('ped','Status do meu pedido','Aviso quando sair para entrega')}${SWT('promo','Novidades e promoções','Aviso quando o cardápio tiver novidades')}${SWT('som','Som de buzina 📯','Toca a buzina ao avisar')}<button class="ghost wide" onclick="testHorn()">📯 Testar buzina</button></div>
            <div class="sec">Meus dados</div><div class="card ed in"><input id="sn" placeholder="Nome" value="${esc(pf.name)}"><div style="height:8px"></div><input id="sp" type="tel" inputmode="numeric" placeholder="WhatsApp com DDD" oninput="mask(this)" value="${esc(pf.phone)}"><div style="height:8px"></div><textarea id="sa" rows="2" placeholder="Endereço de entrega">${esc(pf.address)}</textarea><div class="acts"><button class="btn" onclick="saveMe()">Salvar</button><button class="ghost" onclick="clearMe()">Limpar dados</button></div></div>
            <div class="sec">Fale com a gente</div><div class="card ed in"><div class="acts" style="margin:0"><a class="wa" href="https://wa.me/${WA()}">💬 WhatsApp</a><a href="https://instagram.com/${IG()}">📸 Instagram</a></div></div>
            <p class="d" style="text-align:center;margin-top:18px">Skinão Lanches · app do cliente v3</p>`}
+          let me=null,amode='in',myOrders=[],unOrd=null;
+          const LB={novo:'Recebido',pronto:'Pronto',saiu:'Saiu p/ entrega',entregue:'Entregue'};
+          const AERR={'auth/invalid-email':'E-mail inválido.','auth/invalid-credential':'E-mail ou senha incorretos.','auth/wrong-password':'E-mail ou senha incorretos.','auth/user-not-found':'E-mail ou senha incorretos.','auth/email-already-in-use':'Este e-mail já tem conta. Toque em Entrar.','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/network-request-failed':'Sem internet.','auth/too-many-requests':'Muitas tentativas. Tente mais tarde.'};
+          async function doAuth(){
+           if(!auth){toast('Contas indisponíveis no modo demonstração.');return}
+           const e=$('#ae').value.trim(),pw=$('#ap').value;
+           if(!e||!pw){toast('Preencha e-mail e senha.');return}
+           try{
+            if(amode==='up'){
+             const n=$('#an').value.trim();if(!n){toast('Informe seu nome.');return}
+             const c=await auth.createUserWithEmailAndPassword(e,pw);
+             try{await c.user.updateProfile({displayName:n})}catch(x){}
+             pf.name=pf.name||n;sv('skinao',pf);
+             try{await db.doc('users/'+c.user.uid).set({name:pf.name,phone:pf.phone||'',address:pf.address||''},{merge:true})}catch(x){}
+             toast('Conta criada! Bem-vindo, '+n+' 🎉');
+            }else{await auth.signInWithEmailAndPassword(e,pw);toast('Você entrou ✓')}
+           }catch(er){toast(AERR[er.code]||'Erro: '+(er.message||er.code))}
+          }
+          async function resetPw(){
+           const e=$('#ae').value.trim();if(!e){toast('Digite seu e-mail acima.');return}
+           try{await auth.sendPasswordResetEmail(e);toast('Enviamos um e-mail para redefinir a senha.')}catch(er){toast(AERR[er.code]||'Não foi possível enviar.')}
+          }
+          function logout(){auth.signOut();toast('Você saiu da conta')}
+          async function onUser(u){
+           me=u;if(unOrd){unOrd();unOrd=null}myOrders=[];
+           if(u&&db){
+            try{const s=await db.doc('users/'+u.uid).get();if(s.exists){const v=s.data();pf={name:v.name||pf.name,phone:v.phone||pf.phone,address:v.address||pf.address};sv('skinao',pf)}else if(u.displayName&&!pf.name){pf.name=u.displayName}}catch(e){}
+            unOrd=db.collection('orders').where('uid','==',u.uid).limit(20).onSnapshot(s=>{myOrders=s.docs.map(x=>Object.assign({id:x.id},x.data())).sort((a,b)=>b.at-a.at);if(tab==='cfg')view()},()=>{});
+           }
+           if(tab==='cfg')view();
+          }
+          function acct(){
+           if(me)return `<div class="sec">Minha conta</div><div class="card ed in"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span><b>${esc(pf.name||me.displayName||'Cliente')}</b><div class="d">${esc(me.email)}</div></span><button class="ghost" onclick="logout()">Sair</button></div></div>
+           <div class="sec">Meus pedidos</div>`+(myOrders.length?myOrders.slice(0,8).map(o=>`<div class="card ed in"><div class="rw" style="justify-content:space-between;align-items:center;margin:0"><b>${money(o.total)}</b><span class="st s-${o.status}">${LB[o.status]||o.status}</span></div><div class="d">${(o.lines||[]).map(l=>l.q+'× '+esc(l.n)).join(' · ')}</div><div class="d">${new Date(o.at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>`).join(''):'<div class="card ed in"><div class="d">Seus pedidos aparecerão aqui.</div></div>');
+           return `<div class="sec">Minha conta</div><div class="card ed in"><div class="d" style="margin-bottom:10px">Crie uma conta para guardar seus dados e ver seus pedidos. É opcional.</div><div class="seg"><button class="${amode==='in'?'on':''}" onclick="amode='in';view()">Entrar</button><button class="${amode==='up'?'on':''}" onclick="amode='up';view()">Criar conta</button></div>${amode==='up'?'<input id="an" placeholder="Seu nome" autocomplete="name"><div style="height:8px"></div>':''}<input id="ae" type="email" placeholder="E-mail" autocomplete="email"><div style="height:8px"></div><input id="ap" type="password" placeholder="Senha (mín. 6 caracteres)" autocomplete="${amode==='up'?'new-password':'current-password'}"><button class="btn wide" onclick="doAuth()">${amode==='up'?'Criar conta':'Entrar'}</button>${amode==='in'?'<div class="acts" style="margin-top:8px"><button class="ghost" onclick="resetPw()">Esqueci minha senha</button></div>':''}</div>`}
           function plus(el){const s=document.createElement('i');s.className='plus';s.textContent='+1';el.appendChild(s);setTimeout(()=>s.remove(),700)}
           const TABS=[['menu','🍔','Cardápio'],['news','✨','Novidades'],['promo','🏷️','Promoções'],['dates','🎉','Datas'],['cfg','⚙️','Config']];
           function em(it){if(it.emoji)return it.emoji;const n=it.name.toLowerCase(),M=[['burg|x-|lanche','🍔'],['batata|frita','🍟'],['milk|shake|sorvete|açaí|acai','🥤'],['refri|suco|coca|guaran|bebida|água|agua','🥤'],['pizza','🍕'],['hot|cachorro','🌭'],['pastel|salgad|coxinha','🥟'],['bolo|doce|torta','🍰'],['café|cafe','☕'],['cerveja','🍺'],['sanduíche|sanduiche|misto','🥪']];for(const[k,e]of M)if(new RegExp(k).test(n))return e;return '🍽️'}
@@ -2079,32 +2118,32 @@ jobs:
             const t0=new Date(new Date().toDateString()),ds=(cfg.dates||[]).filter(x=>x.date>=t0.toISOString().slice(0,10)||new Date(x.date+'T00:00')>=t0).sort((a,b)=>a.date.localeCompare(b.date));
             h=ds.length?'<div class="sec">Datas para lembrar</div>'+ds.map((x,i)=>{const n=Math.round((new Date(x.date+'T00:00')-t0)/864e5);return `<div class="card in" ${D(i)}><div class="emo">${x.kind==='comemorativa'?'🎉':'⭐'}</div><div class="inf"><b>${esc(x.label)}</b><div class="d">${x.kind==='comemorativa'?'Data comemorativa':'Data especial'} · ${x.date.split('-').reverse().join('/')}</div><span class="price">${n<=0?'É hoje!':n===1?'Amanhã':'Em '+n+' dias'}</span></div></div>`}).join(''):empty('📅','Nenhuma data cadastrada.');
            }
-           if(tab==='cfg')h=cfgView();$('#view').innerHTML=h;
+           if(tab==='cfg')h=cfgView();if(tab==='menu'&&loaded&&!isOpen())h='<div class="card ed in" style="border-color:#ef4444"><b>🔴 Estamos fechados no momento</b><div class="d">Você pode ver o cardápio, mas só dá para pedir quando abrirmos.</div></div>'+h;$('#view').innerHTML=h;
           }
           const tot=()=>cfg.items.reduce((s,it,i)=>s+(cart[i]||0)*it.price,0),cnt=()=>Object.values(cart).reduce((a,b)=>a+b,0);
           function bar(){const b=$('#bar'),c=cnt();b.classList.toggle('show',c>0&&tab==='menu');if(c)b.innerHTML=`<button onclick="openSheet()"><span style="display:flex;gap:10px;align-items:center"><span class="cnt">${c}</span>Ver meu pedido</span><b>${money(tot())}</b></button>`}
           function q(i,n){const was=cart[i]||0;cart[i]=Math.max(0,was+n);if(!cart[i])delete cart[i];$('#c'+i).classList.toggle('sel',!!cart[i]);if(!was||!cart[i])$('#qc'+i).innerHTML=qc(i);else{const e=$('#q'+i);e.textContent=cart[i];e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop')}if(n>0)plus($('#c'+i));if(navigator.vibrate)navigator.vibrate(8);bar()}
-          function openSheet(){md='entrega';
+          function openSheet(){if(!isOpen()){toast('🔴 Estamos fechados no momento.');return}md='entrega';
            const L=cfg.items.map((it,i)=>cart[i]?`<div class="ln"><span>${cart[i]}× ${esc(it.name)}</span><b>${money(cart[i]*it.price)}</b></div>`:'').join('');
            $('#sheet').innerHTML=`<div class="pane"><div class="grip"></div><h2>Seu pedido 🧾</h2>${L}<div class="tot"><span>Total</span><span class="price">${money(tot())}</span></div><div class="seg"><button id="m1" class="on" onclick="mode('entrega')">🛵 Entrega</button><button id="m2" onclick="mode('retirada')">🏪 Retirada</button></div><input id="cn" placeholder="Seu nome" autocomplete="name" value="${esc(pf.name)}"><input id="cp" type="tel" inputmode="numeric" placeholder="WhatsApp com DDD: (33) 99999-9999" oninput="mask(this)" value="${esc(pf.phone)}"><div id="ad"><textarea id="ca" rows="2" placeholder="Endereço: rua, número, bairro e ponto de referência">${esc(pf.address)}</textarea></div><textarea id="co" rows="2" placeholder="Observações (ex.: sem cebola)"></textarea><button class="send" id="sb" onclick="send()">Confirmar pedido</button></div>`;
            $('#sheet').classList.add('show')}
           function closeSheet(){$('#sheet').classList.remove('show')}
           function confetti(){const C=['#f26a0f','#ffa726','#ffd166','#fff4e8','#c93f08'];for(let i=0;i<46;i++){const s=document.createElement('i');s.className='cf';const a=Math.random()*6.28,r=120+Math.random()*180;s.style.cssText=`background:${C[i%5]};--x:${Math.cos(a)*r}px;--y:${Math.sin(a)*r+120}px;--r:${Math.random()*720}deg`;document.body.appendChild(s);setTimeout(()=>s.remove(),1400)}}
           function done(t,m,e){$('#sheet').innerHTML=`<div class="pane"><div class="ok"><div class="big">${e==='🎉'?'<svg class="ck" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg>':e}</div><h2>${t}</h2><p class="mu" style="color:var(--mu)">${m}</p></div><button class="send" onclick="closeSheet()">Fechar</button></div>`}
-          async function send(){
+          async function send(){if(!isOpen()){toast('🔴 Estamos fechados no momento.');return}
            const name=$('#cn').value.trim(),phone=$('#cp').value.replace(/\D/g,''),address=md==='entrega'?$('#ca').value.trim():'';
            const bad=id=>{const e=$(id);e.style.borderColor='#e11d48';e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');e.focus()};
            if(!name){bad('#cn');return}if(phone.length<10){bad('#cp');return}if(md==='entrega'&&address.length<8){bad('#ca');return}
            const lines=cfg.items.map((it,i)=>({n:it.name,q:cart[i]||0,p:it.price})).filter(l=>l.q>0),total=tot(),obs=$('#co').value;
            $('#sb').textContent='Enviando…';
            try{
-            pf={name,phone:$('#cp').value,address:$('#ca').value};try{localStorage.setItem('skinao',JSON.stringify(pf))}catch(e){}
-            if(db){const ref=await db.collection('orders').add({name,phone,address,mode:md,obs,lines,total,at:Date.now(),status:'novo'});tracked.push({id:ref.id,st:'novo'});sv('skinao_orders',tracked);watchOrders()}
+            pf={name,phone:$('#cp').value,address:$('#ca').value};try{localStorage.setItem('skinao',JSON.stringify(pf))}catch(e){}if(me&&db)db.doc('users/'+me.uid).set(pf,{merge:true}).catch(()=>{});
+            if(db){const ref=await db.collection('orders').add({name,phone,address,mode:md,obs,lines,total,uid:me?me.uid:null,at:Date.now(),status:'novo'});tracked.push({id:ref.id,st:'novo'});sv('skinao_orders',tracked);watchOrders()}
             cart={};done('Pedido enviado!',db?'Já estamos preparando com carinho. Obrigado, '+esc(name)+'!':'Modo demonstração: o pedido não foi enviado de verdade.','🎉');confetti();view();bar();
            }catch(e){done('Ops!','Não foi possível enviar. Tente de novo.','😕')}
           }
           if(db)db.doc('config/main').onSnapshot(s=>{loaded=true;if(s.exists)cfg=Object.assign(cfg,s.data());head();if(tab!=='cfg')view();bar();checkNew()},()=>{loaded=true;view()});
-          head();nav();view();watchOrders();setTimeout(()=>initNotif(true),1200);
+          head();nav();view();watchOrders();if(auth)auth.onAuthStateChanged(onUser);setTimeout(()=>initNotif(true),1200);
           </script></body></html>
           EOF
 
