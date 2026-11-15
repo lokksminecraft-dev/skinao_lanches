@@ -1984,6 +1984,7 @@ jobs:
           .sw input:checked+i{background:var(--btn)}.sw input:checked+i::after{transform:translateX(20px)}.sw .d{margin-top:2px}
           .card.ed .ghost.wide,.card.ed .btn.wide{margin-top:12px}
           .s-saiu{background:#2563eb}.card.ed.so-saiu{border-left:4px solid #3b82f6}
+          .seg button.op.on{background:linear-gradient(135deg,#15803d,#22c55e)}.seg button.cl.on{background:linear-gradient(135deg,#b91c1c,#ef4444)}
           </style></head>
           <body>
           <div class="blob b1"></div><div class="blob b2"></div>
@@ -2004,7 +2005,7 @@ jobs:
           let d=null,orders=[],tab='ord',filt='novo',first=true,dirty=false,anim=true,unsub=[];
           const TABS=[['ord','📦','Pedidos'],['menu','🍔','Cardápio'],['div','📢','Divulgação'],['dat','🎉','Datas'],['cfg','⚙️','Config']];
           const LBL={novo:'Novo',pronto:'Pronto',saiu:'Saiu p/ entrega',entregue:'Entregue'};
-          let resetAt=0,prefs={ped:true,som:true};
+          let resetAt=0,isOpen=true,prefs={ped:true,som:true};
           const inF=(o,k)=>k==='all'||(k==='and'?(o.status==='pronto'||o.status==='saiu'):o.status===k);
           const fresh=new Set();
           const digits=s=>String(s||'').replace(/\D/g,''),full=p=>p.length<=11?'55'+p:p;
@@ -2053,6 +2054,7 @@ jobs:
           const permTxt=(app)=>isNative?(perm==='granted'?'Notificações ativadas':perm==='denied'?'Bloqueadas: ative em Configurações do celular > Apps > '+app+' > Notificações':'Notificações desativadas'):'Disponível só no aplicativo instalado';
           prefs=Object.assign(prefs,ld('skinao_prefs',{}));
           function resetDay(){if(!confirm('Reiniciar o faturamento e a contagem de pedidos de hoje? Os pedidos continuam salvos.'))return;resetAt=Date.now();if(d)d.resetAt=resetAt;db.doc('config/main').set({resetAt},{merge:true}).then(()=>toast('Faturamento do dia reiniciado ✓')).catch(()=>toast('Não foi possível reiniciar.'));anim=true;view()}
+          function setOpen(v){isOpen=v;if(d)d.open=v;db.doc('config/main').set({open:v},{merge:true}).then(()=>toast(v?'🟢 Lanchonete aberta':'🔴 Lanchonete fechada')).catch(()=>toast('Não foi possível alterar.'));view()}
           function delOrder(id){if(!confirm('Excluir este pedido? Isso não pode ser desfeito.'))return;db.doc('orders/'+id).delete().then(()=>toast('Pedido excluído')).catch(()=>toast('Não foi possível excluir.'))}
           function cfgView(c){
            return `<div class="sec">Notificações</div><div class="card ed ${c}"><div class="rw" style="align-items:center;justify-content:space-between;margin:0"><span class="d">🔔 ${esc(permTxt('Painel Skinão'))}</span>${isNative&&perm!=='granted'?'<button class="btn" onclick="initNotif(true,true)">Ativar</button>':''}</div>
@@ -2081,7 +2083,7 @@ jobs:
            const c=anim?'in':'',D=i=>`style="--d:${i*60}ms"`;let h='';
            if(tab==='ord'){
             const t0=Math.max(new Date(new Date().toDateString()).getTime(),resetAt),td=orders.filter(o=>o.at>=t0);
-            h=`<div class="stats"><div class="card ed ${c}"><div class="d">Pedidos hoje</div><b data-n="${td.length}">0</b></div><div class="card ed ${c}"><div class="d">Faturamento hoje</div><b class="price" data-n="${td.reduce((s,o)=>s+(o.total||0),0)}" data-m="1">R$ 0,00</b><div class="d">${resetAt>=new Date(new Date().toDateString()).getTime()?'zerado às '+new Date(resetAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'desde 00:00'}</div><button class="ghost" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="resetDay()">↺ Reiniciar dia</button></div></div>`;
+            h=`<div class="card ed ${c}"><div class="d" style="margin-bottom:8px">Status da lanchonete (aparece no app dos clientes)</div><div class="seg" style="margin:0"><button class="op ${isOpen?'on':''}" onclick="setOpen(true)">🟢 Aberto</button><button class="cl ${!isOpen?'on':''}" onclick="setOpen(false)">🔴 Fechado</button></div></div><div class="stats"><div class="card ed ${c}"><div class="d">Pedidos hoje</div><b data-n="${td.length}">0</b></div><div class="card ed ${c}"><div class="d">Faturamento hoje</div><b class="price" data-n="${td.reduce((s,o)=>s+(o.total||0),0)}" data-m="1">R$ 0,00</b><div class="d">${resetAt>=new Date(new Date().toDateString()).getTime()?'zerado às '+new Date(resetAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'desde 00:00'}</div><button class="ghost" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="resetDay()">↺ Reiniciar dia</button></div></div>`;
             h+='<div class="fl">'+[['novo','Novos'],['and','Em andamento'],['entregue','Entregues'],['all','Todos']].map(([k,l])=>`<button class="fc ${filt===k?'on':''}" onclick="filt='${k}';anim=true;view()">${l} (${orders.filter(o=>inF(o,k)).length})</button>`).join('')+'</div>';
             const L=orders.filter(o=>inF(o,filt));
             h+=L.length?L.map((o,i)=>oc(o,i,c)).join(''):'<div class="empty"><div>📭</div><p>Nenhum pedido aqui.</p></div>';
@@ -2113,7 +2115,7 @@ jobs:
            unsub.forEach(f=>f());unsub=[];d=null;first=true;orders=[];
            if(!u){$('#login').classList.add('show');return}
            $('#login').classList.remove('show');initNotif(true);
-           db.doc('config/main').get().then(s=>{d=Object.assign({name:'Skinão Lanches',notice:'',items:[],news:[],promos:[],dates:[]},s.exists?s.data():{});['items','news','promos','dates'].forEach(k=>d[k]=d[k]||[]);resetAt=d.resetAt||0;view()}).catch(()=>toast('Não foi possível carregar as configurações.'));
+           db.doc('config/main').get().then(s=>{d=Object.assign({name:'Skinão Lanches',notice:'',items:[],news:[],promos:[],dates:[]},s.exists?s.data():{});['items','news','promos','dates'].forEach(k=>d[k]=d[k]||[]);resetAt=d.resetAt||0;isOpen=d.open!==false;view()}).catch(()=>toast('Não foi possível carregar as configurações.'));
            unsub.push(db.collection('orders').orderBy('at','desc').limit(100).onSnapshot(s=>{
             if(!first)s.docChanges().forEach(c=>{if(c.type==='added'){fresh.add(c.doc.id);const o=c.doc.data();if(navigator.vibrate)navigator.vibrate([200,100,200]);toast('🔔 Novo pedido!');notify('🍔 Novo pedido!',(o.name||'Cliente')+' · '+money(o.total)+' · '+(o.lines||[]).map(l=>l.q+'× '+l.n).join(', '),'ord','ped')}});
             first=false;orders=s.docs.map(x=>Object.assign({id:x.id},x.data()));nav();if(tab==='ord')view();
